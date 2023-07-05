@@ -7,12 +7,12 @@ from opentelemetry.metrics import get_meter_provider, set_meter_provider
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-exporter = OTLPMetricExporter(endpoint="localhost:4317", insecure=True)
+exporter = OTLPMetricExporter(endpoint="otel-collector:4317", insecure=True)
 reader = PeriodicExportingMetricReader(exporter)
 provider = MeterProvider(metric_readers=[reader])
 set_meter_provider(provider)
 
-meter = get_meter_provider().get_meter("sample-flask-app", "0.1.2")
+meter = get_meter_provider().get_meter("otel-metrics-simple-flask-app")
 
 get_counter = meter.create_counter("get_counter", "counts get requests")
 post_counter = meter.create_counter("post_counter", "counts post requests")
@@ -58,4 +58,4 @@ def handle_note(id):
         return {}, 204
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=3000, debug=True)

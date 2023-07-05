@@ -1,0 +1,16 @@
+version: "3"
+services:
+    simple-flask-app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: simpleflaskapp
+        ports:
+            - "3000:3000"
+    otel-collector:
+        image: otel/opentelemetry-collector-contrib:0.78.0
+        ports:
+            - "4317:4317"
+        volumes:
+            - ./otel-config/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+            - ./metricsoutput:/var/log
