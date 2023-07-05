@@ -1,4 +1,5 @@
-import opentelemetry
+import os
+
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import \
@@ -7,7 +8,8 @@ from opentelemetry.metrics import get_meter_provider, set_meter_provider
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-exporter = OTLPMetricExporter(endpoint="otel-collector:4317", insecure=True)
+otel_endpoint = os.getenv('OTEL_ENDPOINT', 'localhost:4317')
+exporter = OTLPMetricExporter(endpoint=otel_endpoint, insecure=True)
 reader = PeriodicExportingMetricReader(exporter)
 provider = MeterProvider(metric_readers=[reader])
 set_meter_provider(provider)
@@ -45,14 +47,20 @@ def handle_note(id):
     note = Note.query.get(id)
     if request.method == 'GET':
         get_counter.add(1)
+        if note is None:
+            return {'id': id}, 404
         return {'content': note.content}, 200
     elif request.method == 'PUT':
         put_counter.add(1)
+        if note is None:
+            return {'id': id}, 404
         note.content = request.json['content']
         db.session.commit()
         return {'id': note.id}, 200
     elif request.method == 'DELETE':
         delete_counter.add(1)
+        if note is None:
+            return {'id': id}, 404
         db.session.delete(note)
         db.session.commit()
         return {}, 204
