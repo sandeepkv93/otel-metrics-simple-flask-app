@@ -1,17 +1,22 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim-buster
 
-# Set the working directory in the container to /app
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set working directory in the container
 WORKDIR /app
 
-# Add current directory contents to the container at /app
-ADD . /app
-
-# Install any needed packages specified in requirements.txt
+# Install dependencies
+COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 3000 available for the app
+# Copy project
+COPY . /app/
+
+# Expose the port the app runs in
 EXPOSE 3000
 
-# Run the application
-CMD ["python", "app.py"]
+# Define the command to run the app
+CMD ["python", "main.py"]

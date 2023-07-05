@@ -1,18 +1,10 @@
-import os
+from flask import Blueprint, request
+from opentelemetry.metrics import get_meter_provider
 
-from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import \
-    OTLPMetricExporter
-from opentelemetry.metrics import get_meter_provider, set_meter_provider
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from . import db
+from .models import Note
 
-otel_endpoint = os.getenv('OTEL_ENDPOINT', 'localhost:4317')
-exporter = OTLPMetricExporter(endpoint=otel_endpoint, insecure=True)
-reader = PeriodicExportingMetricReader(exporter)
-provider = MeterProvider(metric_readers=[reader])
-set_meter_provider(provider)
+bp = Blueprint('routes', __name__)
 
 meter = get_meter_provider().get_meter("otel-metrics-simple-flask-app")
 
@@ -21,28 +13,16 @@ post_counter = meter.create_counter("post_counter", "counts post requests")
 put_counter = meter.create_counter("put_counter", "counts put requests")
 delete_counter = meter.create_counter("delete_counter", "counts delete requests")
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
-db = SQLAlchemy(app)
-
-class Note(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(500), unique=False, nullable=False)
-
-with app.app_context():
-    db.create_all()
-
-@app.route('/note', methods=['POST'])
+@bp.route('/note', methods=['POST'])
 def create_note():
     post_counter.add(1)
-    print('Added post_counter')
     content = request.json['content']
     note = Note(content=content)
     db.session.add(note)
     db.session.commit()
     return {'id': note.id}, 201
 
-@app.route('/note/<id>', methods=['GET', 'PUT', 'DELETE'])
+@bp.route('/note/<id>', methods=['GET', 'PUT', 'DELETE'])
 def handle_note(id):
     note = Note.query.get(id)
     if request.method == 'GET':
@@ -64,6 +44,3 @@ def handle_note(id):
         db.session.delete(note)
         db.session.commit()
         return {}, 204
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
