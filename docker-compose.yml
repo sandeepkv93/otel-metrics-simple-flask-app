@@ -10,7 +10,7 @@ services:
         environment:
             - OTEL_ENDPOINT=otel-collector:4317
     otel-collector:
-        image: otel/opentelemetry-collector-contrib:0.78.0
+        image: otel/opentelemetry-collector-contrib:latest
         ports:
             - "4317:4317"
         volumes:
